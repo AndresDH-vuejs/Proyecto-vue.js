@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> ESTUDIANTES </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.1/axios.min.js"></script>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <!--Diseando el fondo y la ventana modal-->
+
+    <div id="app">
+        <h1 align="center"> REGISTRO DE ESTUDIANTES </h1>
+        <p class="mensaje" v-if="mensaje" >{{mensaje}}</p>
+        <button @click="nuevoUsuario=true">NUEVO</button>
+        <table>
+            <thead>
+                <th>ID</th><th>NOMBRE Y APELLIDO</th><th>FOTO</th><th>ACCION</th>
+            </thead>
+            <tbody>
+                <tr v-for="alumno in alumnos">
+                    <td>{{alumno.id}}</td>
+                    <td>{{alumno.nombre}} {{alumno.apellido}}</td>
+                    <td><img :src="'img/'+alumno.foto" width="100"></td>
+                    <td>
+                        <button @click="editarUsuario=true;elegirEstudiantes(alumno)">EDITAR</button>
+                        <button @click="eliminarUsuario=true;elegirEstudiantes(alumno)">ELIMINAR</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!--NUEVO-->
+        <div class="contenedor" v-if="nuevoUsuario">
+            <div class="modal">
+                <div class="header">
+                    <button class="close" @click="nuevoUsuario=false">X</button>
+                    <h1>NUEVO</h1>
+                </div>
+                <div class="contenido">
+                    <label for="">NOMBRE</label>
+                    <input type="text" name="nombre" id="nombre"><br>
+                    <label for="">APELLIDO</label>
+                    <input type="text" name="apellido" id="apellido"><br>
+                    <label for="">FOTO</label>
+                    <img v-if="url" :src="url" width="100"><br>
+                    <input type="file" name="foto" ref="foto" id="foto" v-on:change="verImagen()"><br>
+                    <button @click="insertarUsuario=false; insertarEstudiantes()">CREAR</button>
+                </div>
+            </div>
+        </div>
+        <!--EDITAR-->
+        <div class="contenedor" v-if="editarUsuario">
+            <div class="modal">
+                <div class="header">
+                    <button class="close" @click="editarUsuario=false">X</button>
+                    <h1>Edicion</h1>
+                </div>
+                <div class="contenido">
+                    <label for="">NOMBRE</label>
+                    <input type="text" name="enombre" id="enombre" v-model="elegido.nombre"><br>
+                    <label for="">APELLIDO</label>
+                    <input type="text" name="eapellido" id="eapellido" v-model="elegido.apellido"><br>
+                    <label for="">FOTO</label>
+                    <div v-if="eurl">
+                        <img :src="eurl" width="100"><br>
+                    </div>
+                    <div v-else="eurl">
+                        <img :src="'img/'+elegido.foto" width="100"><br>
+                    </div>
+                    <input type="hidden" id="eid" name="eid" v-model="elegido.id">
+                    <input type="file" name="efoto" ref="efoto" id="efoto" v-on:change="everImagen()"><br>
+                    <button @click="editarUsuario=false; editarEstudiantes()">EDITAR</button>
+                </div>
+            </div>
+        </div>
+        <!--ELIMINAR-->
+        <div class="contenedor" v-if="eliminarUsuario">
+            <div class="modal">
+                <div class="header">
+                    <button class="close" @click="eliminarUsuario=false">X</button>
+                    <h1>ELIMINAR</h1>
+                </div>
+                <div class="contenido">
+                    <p>{{elegido.nombre}}</p>
+                    <input type="hidden" id="did" name="did" v-model="elegido.id">
+                    <div style="text-align: center;">
+                        <button @click="eliminarUsuario=false;eliminarEstudiante()">SI</button>
+                        <button @click="eliminarUsuario=false">NO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+
+    
+
+
+    <script>
+        var app=new Vue({
+             el:"#app",
+             data:{
+                 nuevoUsuario:false,
+                 editarUsuario:false,
+                 eliminarUsuario:false,
+                 alumnos:[],
+                 elegido:{},
+                 url:null,
+                 eurl:null,
+                 mensaje:""
+             },
+             mounted:function(){
+                 this.mostrarAlumnos()
+             },
+             methods:{
+                 mostrarAlumnos:function(){
+                     axios.get("http://localhost/PROYECTOS/VIDE1_ANDRESMORALES/api.php?accion=mostrar")
+                     .then(function(response){
+                         //console.log(response)
+                         app.alumnos=response.data.alumnos
+                     }) 
+                 },
+                 verImagen:function(){
+                    var _this   =   this
+                    _this.file  =   _this.$refs.foto.files[0];
+                    _this.url   =   URL.createObjectURL(_this.file);
+                 },
+                 everImagen:function(){
+                    var _this   =   this
+                    _this.file  =   _this.$refs.efoto.files[0];
+                    _this.url   =   URL.createObjectURL(_this.file);
+                 },
+                 insertarEstudiantes:function(){
+                    let formdata = new FormData()
+                    formdata.append("nombre", document.getElementById("nombre").value)
+                    formdata.append("apellido", document.getElementById("apellido").value)
+                    formdata.append("foto", document.getElementById("foto").files[0]) 
+
+                    axios.post("http://localhost/PROYECTOS/VIDE1_ANDRESMORALES/api.php?accion=insertar", formdata)
+                     .then(function(response){
+                         //console.log(response) 
+                         app.mensaje=response.data.mensaje
+                         app.mostrarAlumnos()
+                     })     
+                 },
+                 editarEstudiantes:function(){
+                    let formdata = new FormData()
+                    formdata.append("eid", document.getElementById("eid").value)
+                    formdata.append("enombre", document.getElementById("enombre").value)
+                    formdata.append("eapellido", document.getElementById("eapellido").value)
+                    formdata.append("efoto", document.getElementById("efoto").files[0]) 
+
+                    axios.post("http://localhost/PROYECTOS/VIDE1_ANDRESMORALES/api.php?accion=editar", formdata)
+                     .then(function(response){
+                         //console.log(response) 
+                         app.mensaje=response.data.mensaje
+                         app.mostrarAlumnos()
+                     })     
+                 },
+                 eliminarEstudiante:function(){
+                    let formdata = new FormData()
+                    formdata.append("did", document.getElementById("did").value)
+                    axios.post("http://localhost/PROYECTOS/VIDE1_ANDRESMORALES/api.php?accion=eliminar", formdata)
+                     .then(function(response){
+                         //console.log(response)
+                         app.mensaje=response.data.mensaje 
+                         app.mostrarAlumnos()
+                     })     
+                 },
+                elegirEstudiantes(alumno){
+                    app.elegido = alumno
+                 },
+             }
+        })
+    </script>
+</body>
+</html>
